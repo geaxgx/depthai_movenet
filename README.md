@@ -25,24 +25,24 @@ python3 -m pip install -r requirements.txt
 
 ```
 > python3 demo.py -h                                               
-usage: demo.py [-h] [-m {lightning,thunder}] [-i INPUT] [-b BLOB]
-               [-s SCORE_THRESHOLD] [--internal_fps INTERNAL_FPS]
+usage: demo.py [-h] [-m MODEL] [-i INPUT] [-s SCORE_THRESHOLD]
+               [--internal_fps INTERNAL_FPS]
                [--internal_frame_size INTERNAL_FRAME_SIZE] [-o OUTPUT]
 
 optional arguments:
   -h, --help            show this help message and exit
-  -m {lightning,thunder}, --model {lightning,thunder}
-                        Model to use (default=thunder
+  -m MODEL, --model MODEL
+                        Model to use : 'thunder' or 'lightning' or path of a
+                        blob file (default=thunder
   -i INPUT, --input INPUT
                         'rgb' or 'rgb_laconic' or path to video/image file to
                         use as input (default: rgb)
-  -b BLOB, --blob BLOB  Path to an .blob file for pose detection model
   -s SCORE_THRESHOLD, --score_threshold SCORE_THRESHOLD
                         Confidence score to determine whether a keypoint
                         prediction is reliable (default=0.200000)
   --internal_fps INTERNAL_FPS
                         Fps of internal color camera. Too high value lower NN
-                        fps (default=26)
+                        fps (default: depends on the model
   --internal_frame_size INTERNAL_FRAME_SIZE
                         Internal color camera frame size (= width = height) in
                         pixels (default=640)
@@ -68,7 +68,7 @@ optional arguments:
 
     ```python3 BlazeposeOpenvino.py --internal_fps 15```
 
-    Note: by default, the internal camera FPS is set to 26 for Lightning, and to 12 for Thunder. These values are based on my own observations. If you observe that your FPS is well below the default value, you should should lower the FPS with this option until the FPS set is just above the observed FPS.
+    Note: by default, the internal camera FPS is set to 26 for Lightning, and to 12 for Thunder. These values are based on my own observations. If you observe that your FPS is well below the default value, you should lower the FPS with this option until the set FPS is just above the observed FPS.
 
 - When using the internal camera, you may not need to work with the full resolution. You can work with a lower resolution (and win a bit of FPS) by using this option: 
 
@@ -100,7 +100,7 @@ To facilitate reusability, the code is splitted in 2 classes:
 
 This way, you can replace the renderer from this repository and write and personalize your own renderer (for some projects, you may not even need a renderer).
 
-The file ```demo.py``` is arepresentative example of how to use these classes:
+The file ```demo.py``` is a representative example of how to use these classes:
 ```
 from MovenetDepthai import MovenetDepthai
 from MovenetRenderer import MovenetRenderer
@@ -108,7 +108,7 @@ from MovenetRenderer import MovenetRenderer
 # I have removed the argparse stuff to keep only the important code
 
 pose = MovenetDepthai(input_src=args.input, 
-            blob=args.blob,    
+            model=args.model,    
             score_thresh=args.score_threshold,           
             internal_fps=args.internal_fps,
             internal_frame_size=args.internal_frame_size
@@ -130,6 +130,13 @@ while True:
 renderer.exit()
 pose.exit()
 ```
+
+## Examples
+
+|||
+|-|-|
+|[Semaphore alphabet](examples/semaphore_alphabet)  |<img src="examples/semaphore_alphabet/medias/semaphore.gif" alt="Sempahore alphabet" width="200"/>
+|||
 
 
 ## Credits

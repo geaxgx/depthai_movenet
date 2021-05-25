@@ -34,10 +34,11 @@ KEYPOINT_DICT = {
 }
 
 class Body:
-    def __init__(self, scores=None, keypoints_norm=None, keypoints=None):
+    def __init__(self, scores=None, keypoints_norm=None, keypoints=None, score_thresh=None):
         self.scores = scores # scores of the keypoints
         self.keypoints_norm = keypoints_norm # Keypoints normalized ([0,1]) coordinates (x,y) in the squared input image
         self.keypoints = keypoints # keypoints coordinates (x,y) in pixels in the source image
+        self.score_thresh = score_thresh # score threshold used
 
     def print(self):
         attrs = vars(self)
@@ -76,20 +77,30 @@ def find_isp_scale_params(size):
 
 class MovenetDepthai:
     def __init__(self, input_src="rgb",
-                blob=None, 
+                model=None, 
                 score_thresh=0.2,
                 crop=False,
                 internal_fps=None,
                 internal_frame_size=640,
                 stats=True):
 
-        self.blob = blob 
-        print(f"Using blob : {self.blob}")
+        self.model = model 
         
-        if "lightning" in str(blob):
+        
+        if model == "lightning":
+            self.model = str(MOVENET_LIGHTNING_MODEL)
             self.pd_input_length = 192
-        else: # Thunder
+        elif model == "thunder":
+            self.model = str(MOVENET_THUNDER_MODEL)
             self.pd_input_length = 256
+        else:
+            self.model = model
+            if "lightning" in str(model):
+                self.pd_input_length = 192
+            else: # Thunder
+                self.pd_input_length = 256
+        print(f"Using blob file : {self.model}")
+
         print(f"MoveNet imput size : {self.pd_input_length}x{self.pd_input_length}x3")
         self.score_thresh = score_thresh   
         
@@ -101,7 +112,7 @@ class MovenetDepthai:
             self.input_type = "rgb" # OAK* internal color camera
             self.laconic = "laconic" in input_src # Camera frames are not sent to the host
             if internal_fps is None:
-                if "thunder" in str(blob):
+                if "thunder" in str(model):
                     self.internal_fps = 12
                 else:
                     self.internal_fps = 26
@@ -222,7 +233,7 @@ class MovenetDepthai:
         print("Creating Pose Detection Neural Network...")
         pd_nn = pipeline.createNeuralNetwork()
         # pd_nn = pipeline.create(dai.node.NeuralNetwork)
-        pd_nn.setBlobPath(str(Path(self.blob).resolve().absolute()))
+        pd_nn.setBlobPath(str(Path(self.model).resolve().absolute()))
         # pd_nn.input.setQueueSize(1)
         # Increase threads for detection
         # pd_nn.setNumInferenceThreads(2)
@@ -336,7 +347,7 @@ class MovenetDepthai:
     def pd_postprocess(self, inference):
         
         kps = np.array(inference.getLayerFp16('Identity')).reshape(-1,3) # 17x3
-        body = Body(scores=kps[:,2], keypoints_norm=kps[:,[1,0]])
+        body = Body(scores=kps[:,2], keypoints_norm=kps[:,[1,0]], score_thresh=self.score_thresh)
         body.keypoints = (np.array([self.crop_region.xmin, self.crop_region.ymin]) + body.keypoints_norm * self.crop_region.size).astype(np.int)
         body.crop_region = self.crop_region
         body.next_crop_region = self.determine_crop_region(body)
