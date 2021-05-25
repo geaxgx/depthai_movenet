@@ -114,8 +114,8 @@ class FullBodyPoseEmbedder(object):
       Numpy array with pose embedding of shape (M, 3) where `M` is the number of
       pairwise distances defined in `_get_pose_distance_embedding`.
     """
-    print(landmarks.shape[0])
-    print(len(self._landmark_names))
+    # print(landmarks.shape[0])
+    # print(len(self._landmark_names))
     assert landmarks.shape[0] == len(self._landmark_names), 'Unexpected number of landmarks: {}'.format(landmarks.shape[0])
 
     # Get pose landmarks.
@@ -328,8 +328,8 @@ class PoseClassifier(object):
       with open(os.path.join(pose_samples_folder, file_name)) as csv_file:
         csv_reader = csv.reader(csv_file, delimiter=file_separator)
         for row in csv_reader:
-          print(len(row))
-          print(n_landmarks * n_dimensions + 1)
+          # print(len(row))
+          # print(n_landmarks * n_dimensions + 1)
           assert len(row) == n_landmarks * n_dimensions + 1, 'Wrong number of values: {}'.format(len(row))
           landmarks = np.array(row[1:], np.float32).reshape([n_landmarks, n_dimensions])
           pose_samples.append(PoseSample(
@@ -420,7 +420,7 @@ class PoseClassifier(object):
     class_names = [self._pose_samples[sample_idx].class_name for _, sample_idx in mean_dist_heap]
     result = {class_name: class_names.count(class_name) for class_name in set(class_names)}
 
-    print(result)
+    # print(result)
 
     return result
 
@@ -441,8 +441,8 @@ def recognize_pose(b):
 
         #assert b.keypoints.shape == (33, 3), 'Unexpected landmarks shape: {}'.format(b.keypoints.shape)
 
-        print(b.keypoints)
-        print(type(b.keypoints))
+        # print(b.keypoints)
+        # print(type(b.keypoints))
 
         b.keypoints = b.keypoints.astype('float32')
 
@@ -487,7 +487,7 @@ while True:
     # Gesture recognition
     pose1 = recognize_pose(body)
     if pose1:
-        cv2.putText(frame, pose1, (frame.shape[1] // 2, 100), cv2.FONT_HERSHEY_PLAIN, 5, (0,190,255), 3)
+        cv2.putText(frame, pose1, (frame.shape[1] // 2, 100), cv2.FONT_HERSHEY_PLAIN, 3, (0,190,255), 3)
     key = renderer.waitKey(delay=1)
     if key == 27 or key == ord('q'):
         break
