@@ -135,8 +135,8 @@ pose.exit()
 
 |||
 |-|-|
-|[Semaphore alphabet](examples/semaphore_alphabet)  |<img src="examples/semaphore_alphabet/medias/semaphore.gif" alt="Sempahore alphabet" width="200"/>
-|||
+|[Semaphore alphabet](examples/semaphore_alphabet)  |<img src="examples/semaphore_alphabet/medias/semaphore.gif" alt="Sempahore alphabet" width="200"/>|
+|[Yoga Pose Classification](examples/yoga_pose_recognition)|<img src="examples/yoga_pose_recognition/medias/yoga_pose.gif" alt="Yoga Pose Classification" width="200"/>|
 
 
 ## Credits
