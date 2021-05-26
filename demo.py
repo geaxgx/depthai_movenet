@@ -1,19 +1,18 @@
-from MovenetDepthai import MovenetDepthai
-from MovenetRenderer import MovenetRenderer
 import argparse
-
-
+from MovenetRenderer import MovenetRenderer
 
 
 parser = argparse.ArgumentParser()
+parser.add_argument("-e", "--edge", action="store_true",
+                    help="Use Edge mode (the cropping algorithm runs on device)")
 parser.add_argument("-m", "--model", type=str, default='thunder',
-                        help="Model to use : 'thunder' or 'lightning' or path of a blob file (default=%(default)s")
+                    help="Model to use : 'thunder' or 'lightning' or path of a blob file (default=%(default)s")
 parser.add_argument('-i', '--input', type=str, default='rgb',
                     help="'rgb' or 'rgb_laconic' or path to video/image file to use as input (default: %(default)s)")
 # parser.add_argument('-c', '--crop', action="store_true", 
 #                     help="Center crop frames to a square shape before feeding pose detection model")   
 parser.add_argument("-s", "--score_threshold", default=0.2, type=float,
-                        help="Confidence score to determine whether a keypoint prediction is reliable (default=%(default)f)") 
+                    help="Confidence score to determine whether a keypoint prediction is reliable (default=%(default)f)") 
 parser.add_argument('--internal_fps', type=int,                                                                                     
                     help="Fps of internal color camera. Too high value lower NN fps (default: depends on the model")    
 parser.add_argument('--internal_frame_size', type=int, default=640,                                                                                    
@@ -22,8 +21,12 @@ parser.add_argument("-o","--output",
                     help="Path to output video file")
 
     
-
 args = parser.parse_args()
+
+if args.edge:
+    from MovenetDepthaiEdge import MovenetDepthai
+else:
+    from MovenetDepthai import MovenetDepthai
 
 pose = MovenetDepthai(input_src=args.input, 
             model=args.model,    
