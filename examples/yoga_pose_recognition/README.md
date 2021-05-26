@@ -1,4 +1,4 @@
-# Yoga Pose with MoveNet on DepthAI
+# Yoga Pose Classification with MoveNet on DepthAI
 
 This demo demonstrates the classification of yoga poses.
 
