@@ -1,5 +1,9 @@
 # Yoga Pose with MoveNet on DepthAI
 
+This demo demonstrates the recognition of semaphore alphabet.
+
+![Yoga Pose Classification](medias/yoga_pose.gif)
+
 Recognizes four yoga poses :
 - mountain
 - cobra
