@@ -424,17 +424,12 @@ class PoseClassifier(object):
 
     return result
 
-def recognize_pose(b):           
-
-        pose1 = "Pose not detected"
-    #################################################################################
-
-        
+def recognize_pose(b):  
 
         pose_embedder = FullBodyPoseEmbedder()
 
         pose_classifier = PoseClassifier(
-                pose_samples_folder='./fitness_poses_csvs_out_processed_f',
+                pose_samples_folder='./fitness_poses_csvs_out_processed _f',
                 pose_embedder=pose_embedder,
                 top_n_by_max_distance=30,
                 top_n_by_mean_distance=10)
