@@ -1,6 +1,6 @@
 # Yoga Pose with MoveNet on DepthAI
 
-This demo demonstrates the recognition of semaphore alphabet.
+This demo demonstrates the classification of yoga poses.
 
 ![Yoga Pose Classification](medias/yoga_pose.gif)
 
