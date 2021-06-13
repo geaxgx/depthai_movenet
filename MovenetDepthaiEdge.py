@@ -59,20 +59,33 @@ class Body:
 
 CropRegion = namedtuple('CropRegion',['xmin', 'ymin', 'xmax',  'ymax', 'size']) # All values are in pixel. The region is a square of size 'size' pixels
 
-def find_isp_scale_params(size):
+def find_isp_scale_params(size, is_height=True):
+    """
+    Find closest valid size close to 'size' and and the corresponding parameters to setIspScale()
+    This function is useful to work around a bug in depthai where ImageManip is scrambling images that have an invalid size
+    is_height : boolean that indicates if the value is the height or the width of the image
+    Returns: valid size, (numerator, denominator)
+    """
     # We want size >= 288
     if size < 288:
         size = 288
     
     # We are looking for the list on integers that are divisible by 16 and
     # that can be written like n/d where n <= 16 and d <= 63
+    if is_height:
+        reference = 1080 
+        other = 1920
+    else:
+        reference = 1920 
+        other = 1080
     size_candidates = {}
-    for s in range(288,1080,16):
-        f = gcd(1080, s)
+    for s in range(288,reference,16):
+        f = gcd(reference, s)
         n = s//f
-        d = 1080//f
-        if n <= 16 and d <= 63:
+        d = reference//f
+        if n <= 16 and d <= 63 and int(round(other * n / d) % 2 == 0):
             size_candidates[s] = (n, d)
+            
     # What is the candidate size closer to 'size' ?
     min_dist = -1
     for s in size_candidates:
@@ -89,6 +102,23 @@ def find_isp_scale_params(size):
     
 
 class MovenetDepthai:
+    """
+    Movenet body pose detector
+    Arguments:
+    - input_src: frame source, 
+                    - "rgb" or None: OAK* internal color camera,
+                    - "rgb_laconic": same as "rgb" but without sending the frames to the host,
+    - model: Movenet blob file,
+                    - "thunder": the default thunder blob file (see variable MOVENET_THUNDER_MODEL),
+                    - "lightning": the default lightning blob file (see variable MOVENET_LIGHTNING_MODEL),
+                    - a path of a blob file. It is important that the filename contains 
+                    the string "thunder" or "lightning" to identify the tyoe of the model.
+    - score_thresh : confidence score to determine whether a keypoint prediction is reliable (a float between 0 and 1).
+    - crop : cuurently not used.
+    - internal_fps : when using the internal color camera as input source, set its FPS to this value (calling setFps()).
+    - internal_frame_size : when using the internal color camera, set the frame size (calling setIspScale())
+    - stats : True or False, when True, display the global FPS when exiting.            
+    """
     def __init__(self, input_src="rgb",
                 model=None, 
                 score_thresh=0.2,
@@ -253,11 +283,11 @@ class MovenetDepthai:
 
     def build_processing_script(self):
         '''
-        The code of the scripting node 'template_processing_script' depends on :
+        The code of the scripting node 'processing_script' depends on :
             - the NN model (thunder or lightning),
             - the score threshold,
             - the video frame shape
-        So we build this code from the content of the file processing_script.py which is a python template
+        So we build this code from the content of the file template_processing_script.py which is a python template
         '''
         # Read the template
         with open('template_processing_script.py', 'r') as file:

@@ -34,11 +34,22 @@ KEYPOINT_DICT = {
 }
 
 class Body:
-    def __init__(self, scores=None, keypoints_norm=None, keypoints=None, score_thresh=None):
-        self.scores = scores # scores of the keypoints
-        self.keypoints_norm = keypoints_norm # Keypoints normalized ([0,1]) coordinates (x,y) in the squared input image
-        self.keypoints = keypoints # keypoints coordinates (x,y) in pixels in the source image
-        self.score_thresh = score_thresh # score threshold used
+    def __init__(self, scores=None, keypoints_norm=None, keypoints=None, score_thresh=None, crop_region=None, next_crop_region=None):
+        """
+        Attributes:
+        scores : scores of the keypoints
+        keypoints_norm : keypoints normalized ([0,1]) coordinates (x,y) in the squared cropped region
+        keypoints : keypoints coordinates (x,y) in pixels in the source image
+        score_thresh : score threshold used
+        crop_region : cropped region on which the current body was inferred
+        next_crop_region : cropping region calculated from the current body keypoints and that will be used on next frame
+        """
+        self.scores = scores 
+        self.keypoints_norm = keypoints_norm 
+        self.keypoints = keypoints
+        self.score_thresh = score_thresh
+        self.crop_region = crop_region
+        self.next_crop_region = next_crop_region
 
     def print(self):
         attrs = vars(self)
@@ -47,6 +58,11 @@ class Body:
 CropRegion = namedtuple('CropRegion',['xmin', 'ymin', 'xmax',  'ymax', 'size']) # All values are in pixel. The region is a square of size 'size' pixels
 
 def find_isp_scale_params(size):
+    """
+    Find closest valid size close to 'size' and and the corresponding parameters to setIspScale()
+
+    Returns: (numerator, denominator), valid size
+    """
     # We want size >= 288
     if size < 288:
         size = 288
@@ -76,6 +92,25 @@ def find_isp_scale_params(size):
     
 
 class MovenetDepthai:
+    """
+    Movenet body pose detector
+    Arguments:
+    - input_src: frame source, 
+                    - "rgb" or None: OAK* internal color camera,
+                    - "rgb_laconic": same as "rgb" but without sending the frames to the host,
+                    - a file path of an image or a video,
+                    - an integer (eg 0) for a webcam id,
+    - model: Movenet blob file,
+                    - "thunder": the default thunder blob file (see variable MOVENET_THUNDER_MODEL),
+                    - "lightning": the default lightning blob file (see variable MOVENET_LIGHTNING_MODEL),
+                    - a path of a blob file. It is important that the filename contains 
+                    the string "thunder" or "lightning" to identify the tyoe of the model.
+    - score_thresh : confidence score to determine whether a keypoint prediction is reliable (a float between 0 and 1).
+    - crop : cuurently not used.
+    - internal_fps : when using the internal color camera as input source, set its FPS to this value (calling setFps()).
+    - internal_frame_size : when using the internal color camera, set the frame size (calling setIspScale())
+    - stats : True or False, when True, display the global FPS when exiting.            
+    """
     def __init__(self, input_src="rgb",
                 model=None, 
                 score_thresh=0.2,
@@ -83,6 +118,7 @@ class MovenetDepthai:
                 internal_fps=None,
                 internal_frame_size=640,
                 stats=True):
+        
 
         self.model = model 
         

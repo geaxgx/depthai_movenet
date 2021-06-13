@@ -6,9 +6,9 @@ parser = argparse.ArgumentParser()
 parser.add_argument("-e", "--edge", action="store_true",
                     help="Use Edge mode (the cropping algorithm runs on device)")
 parser.add_argument("-m", "--model", type=str, default='thunder',
-                    help="Model to use : 'thunder' or 'lightning' or path of a blob file (default=%(default)s")
+                    help="Model to use : 'thunder' or 'lightning' or path of a blob file (default=%(default)s)")
 parser.add_argument('-i', '--input', type=str, default='rgb',
-                    help="'rgb' or 'rgb_laconic' or path to video/image file to use as input (default: %(default)s)")
+                    help="'rgb' or 'rgb_laconic' or path to video/image file to use as input (default=%(default)s)")
 # parser.add_argument('-c', '--crop', action="store_true", 
 #                     help="Center crop frames to a square shape before feeding pose detection model")   
 parser.add_argument("-s", "--score_threshold", default=0.2, type=float,
@@ -40,7 +40,7 @@ renderer = MovenetRenderer(
                 output=args.output)
 
 while True:
-    # Run blazepose on next frame
+    # Run movenet on next frame
     frame, body = pose.next_frame()
     if frame is None: break
     # Draw 2d skeleton
