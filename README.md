@@ -4,7 +4,7 @@ Running Google MoveNet Single Pose models on [DepthAI](https://docs.luxonis.com/
 
 A convolutional neural network model that runs on RGB images and predicts [human joint
 locations](https://github.com/tensorflow/tfjs-models/tree/master/pose-detection#coco-keypoints-used-in-movenet-and-posenet) of a single person. Two variant: Lightning and Thunder, the latter being slower but more accurate.
-MoveNet uses an smart cropping based on detections from the previous frame when the input is a sequence of frames. This allows the model to devote its attention and resources to the main subject, resulting in much better prediction quality without sacrificing the speed.
+MoveNet uses a smart cropping based on detections from the previous frame when the input is a sequence of frames. This allows the model to devote its attention and resources to the main subject, resulting in much better prediction quality without sacrificing the speed.
 
 ![Demo](img/dance.gif)
 
@@ -12,9 +12,9 @@ For MoveNet on OpenVINO, please visit : [openvino_movenet](https://github.com/ge
 
 
 ## Architecture: Host mode vs Edge mode
-The cropping algorithm determines from the body detected in frame N, on which region of frame N+1  the inference will run. The mode (Host or Edge) describes where this algorithm is run :
-- in Host mode, the cropping algorithm is run on the host cpu. Only this mode allows images or video files as input. The flow of information between the host and the device is bi-directional: in particular, the host sends frames or cropping instructions to the device;
-- in Edge mode, tthe cropping algorithm is run on the MyriadX. So, in this mode, all the bricks of MoveNet (inference, determination of the cropping region for next frame, cropping) are executed on the device. The only information exchanged are the body keypoints and the camera video frame.
+The cropping algorithm determines from the body detected in frame N, on which region of frame N+1  the inference will run. The mode (Host or Edge) describes where this algorithm runs :
+- in Host mode, the cropping algorithm runs on the host cpu. Only this mode allows images or video files as input. The flow of information between the host and the device is bi-directional: in particular, the host sends frames or cropping instructions to the device;
+- in Edge mode, the cropping algorithm runs on the MyriadX. So, in this mode, all the functional bricks of MoveNet (inference, determination of the cropping region for next frame, cropping) are executed on the device. The only information exchanged are the body keypoints and optionally the camera video frame.
 
 Note: in either mode, when using the color camera, you can choose to disable the sending of the video frame to the host, by specifying "rgb_laconic" instead of "rgb" as input source.
 
@@ -35,50 +35,51 @@ python3 -m pip install -r requirements.txt
 
 ```
 > python3 demo.py -h                                               
-usage: demo.py [-h] [-e] [-m MODEL] [-i INPUT] [-s SCORE_THRESHOLD]
+usage: demo.py [-h] [-e] [-m MODEL] [-i INPUT] [-c] [-s SCORE_THRESHOLD]
                [--internal_fps INTERNAL_FPS]
-               [--internal_frame_size INTERNAL_FRAME_SIZE] [-o OUTPUT]
+               [--internal_frame_height INTERNAL_FRAME_HEIGHT] [-o OUTPUT]
 
 optional arguments:
   -h, --help            show this help message and exit
   -e, --edge            Use Edge mode (the cropping algorithm runs on device)
   -m MODEL, --model MODEL
                         Model to use : 'thunder' or 'lightning' or path of a
-                        blob file (default=thunder
+                        blob file (default=thunder)
   -i INPUT, --input INPUT
                         'rgb' or 'rgb_laconic' or path to video/image file to
-                        use as input (default: rgb)
+                        use as input (default=rgb)
+  -c, --crop            Center crop frames to a square shape
   -s SCORE_THRESHOLD, --score_threshold SCORE_THRESHOLD
                         Confidence score to determine whether a keypoint
                         prediction is reliable (default=0.200000)
   --internal_fps INTERNAL_FPS
                         Fps of internal color camera. Too high value lower NN
                         fps (default: depends on the model
-  --internal_frame_size INTERNAL_FRAME_SIZE
-                        Internal color camera frame size (= width = height) in
-                        pixels (default=640)
+  --internal_frame_height INTERNAL_FRAME_HEIGHT
+                        Internal color camera frame height in pixels
+                        (default=640)
   -o OUTPUT, --output OUTPUT
                         Path to output video file
 ```
 **Examples :**
 
-- To use default internal color camera as input with the Thunder model (Host mode):
+- To run the Thunder model on the internal color camera in Host mode:
 
     ```python3 demo.py```
 
-- To use default internal color camera as input with the Thunder model (Edge mode):
+- To run the Thunder model on the internal color camera in Edge mode:
 
     ```python3 demo.py -e```
 
-- To use default internal color camera as input with the Lightning model :
+- To run the Lightning model on the internal color camera in Host mode:
 
     ```python3 demo.py -m lightning```
 
-- To use a file (video or image) as input with the Thunder model :
+- To run the Thunder model on a file (video or image):
 
     ```python3 demo.py -i filename```
 
-- When using the internal camera, to change its FPS to 15 : 
+- To change the FPS of the internal camera to 15 frames/s: 
 
     ```python3 BlazeposeOpenvino.py --internal_fps 15```
 

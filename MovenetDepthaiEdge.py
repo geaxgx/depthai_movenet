@@ -114,9 +114,10 @@ class MovenetDepthai:
                     - a path of a blob file. It is important that the filename contains 
                     the string "thunder" or "lightning" to identify the tyoe of the model.
     - score_thresh : confidence score to determine whether a keypoint prediction is reliable (a float between 0 and 1).
-    - crop : cuurently not used.
+    - crop : boolean which indicates if square cropping is done or not
     - internal_fps : when using the internal color camera as input source, set its FPS to this value (calling setFps()).
-    - internal_frame_size : when using the internal color camera, set the frame size (calling setIspScale())
+    - internal_frame_height : when using the internal color camera, set the frame height (calling setIspScale()).
+                                The width is calculated accordingly to height and depends on value of 'crop'
     - stats : True or False, when True, display the global FPS when exiting.            
     """
     def __init__(self, input_src="rgb",
@@ -124,7 +125,7 @@ class MovenetDepthai:
                 score_thresh=0.2,
                 crop=False,
                 internal_fps=None,
-                internal_frame_size=640,
+                internal_frame_height=640,
                 stats=True):
 
         self.model = model 
@@ -165,14 +166,17 @@ class MovenetDepthai:
             print(f"Internal camera FPS set to: {self.internal_fps}")
 
             self.video_fps = internal_fps # Used when saving the output in a video file. Should be close to the real fps
-            self.crop = True # Temp
+            
             if self.crop:
-                self.frame_size, self.scale_nd = find_isp_scale_params(internal_frame_size)
+                self.frame_size, self.scale_nd = find_isp_scale_params(internal_frame_height)
                 self.img_h = self.img_w = self.frame_size
-                print(f"Internal camera image size: {self.frame_size} x {self.frame_size}")
             else:
-                self.img_w = 1920
-                self.img_h = 1080
+                width, self.scale_nd = find_isp_scale_params(internal_frame_height * 1920 / 1080, is_height=False)
+                self.img_h = int(round(1080 * self.scale_nd[0] / self.scale_nd[1]))
+                self.img_w = int(round(1920 * self.scale_nd[0] / self.scale_nd[1]))
+                self.frame_size = self.img_w
+            print(f"Internal camera image size: {self.img_w} x {self.img_h}")
+
         else:
             print(f"Input source '{input_src}' is not supported in edge mode !")
             print("Valid input sources: 'rgb', 'rgb_laconic'")
@@ -193,9 +197,10 @@ class MovenetDepthai:
         # Define data queues 
         if not self.laconic:
             self.q_video = self.device.getOutputQueue(name="cam_out", maxSize=1, blocking=False)
-
         self.q_processing_out = self.device.getOutputQueue(name="processing_out", maxSize=4, blocking=False)
-            
+        # For debugging
+        # self.q_manip_out = self.device.getOutputQueue(name="manip_out", maxSize=1, blocking=False)
+   
         self.fps = FPS()
 
         self.nb_frames = 0
@@ -212,28 +217,21 @@ class MovenetDepthai:
         cam = pipeline.create(dai.node.ColorCamera) 
         cam.setResolution(dai.ColorCameraProperties.SensorResolution.THE_1080_P)
         cam.setInterleaved(False)
-        # if self.crop:
-        # Crop video to square shape (palm detection takes square image as input)
-        
         cam.setIspScale(self.scale_nd[0], self.scale_nd[1])
-        cam.setVideoSize(self.frame_size, self.frame_size)
-        cam.setPreviewSize(self.frame_size, self.frame_size)
-        # else: # Letterboxing
-            # cam.setPreviewSize(*cam.getVideoSize())
-            # # Define pose detection pre processing (resize preview from (self.frame_size, self.frame_size) to  (self.pd_input_length, self.pd_input_length))
-            # print("Creating letterboxing image manip...")
-            # letterboxing_manip = pipeline.create(dai.node.ImageManip)
-            # self.frame_size = max(cam.getVideoSize()) // 16 * 16
-            # letterboxing_manip.initialConfig.setResizeThumbnail(self.frame_size, self.frame_size)
-            # letterboxing_manip.setMaxOutputFrameSize(3*self.frame_size**2)
-            # letterboxing_manip.inputImage.setQueueSize(1)
-            # letterboxing_manip.inputImage.setBlocking(False)
-            # cam.preview.link(letterboxing_manip.inputImage)
-
         cam.setFps(self.internal_fps)
-        
         cam.setBoardSocket(dai.CameraBoardSocket.RGB)
         cam.setColorOrder(dai.ColorCameraProperties.ColorOrder.RGB)
+        if self.crop:
+            cam.setVideoSize(self.frame_size, self.frame_size)
+            cam.setPreviewSize(self.frame_size, self.frame_size)
+        else: 
+            cam.setVideoSize(self.img_w, self.img_h)
+            cam.setPreviewSize(self.img_w, self.img_h)
+        
+        if not self.laconic:
+            cam_out = pipeline.create(dai.node.XLinkOut)
+            cam_out.setStreamName("cam_out")
+            cam.video.link(cam_out.input)
 
         # ImageManip for cropping
         manip = pipeline.create(dai.node.ImageManip)
@@ -242,14 +240,12 @@ class MovenetDepthai:
         manip.inputImage.setQueueSize(1)
         manip.inputImage.setBlocking(False)            
 
-        
-
         cam.preview.link(manip.inputImage)
 
-        if not self.laconic:
-            cam_out = pipeline.create(dai.node.XLinkOut)
-            cam_out.setStreamName("cam_out")
-            cam.video.link(cam_out.input)
+        # For debugging
+        # manip_out = pipeline.createXLinkOut()
+        # manip_out.setStreamName("manip_out")
+        # manip.out.link(manip_out.input)
 
         # Define pose detection model
         print("Creating Pose Detection Neural Network...")
@@ -258,10 +254,8 @@ class MovenetDepthai:
         # pd_nn.input.setQueueSize(1)
         # Increase threads for detection
         # pd_nn.setNumInferenceThreads(2)
-        if self.crop:
-            manip.out.link(pd_nn.input)
-        # else:
-        #     letterboxing_manip.out.link(pd_nn.input)
+
+        manip.out.link(pd_nn.input)
 
         # Define processing script
         processing_script = pipeline.create(dai.node.Script)
@@ -326,6 +320,10 @@ class MovenetDepthai:
         else:
             in_video = self.q_video.get()
             frame = in_video.getCvFrame()
+
+        # For debugging
+        # manip = self.q_manip_out.get().getCvFrame()
+        # cv2.imshow("manip", manip)
 
         # Get result from device
         inference = self.q_processing_out.get()
