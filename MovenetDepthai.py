@@ -114,7 +114,9 @@ class MovenetDepthai:
                     - a path of a blob file. It is important that the filename contains 
                     the string "thunder" or "lightning" to identify the tyoe of the model.
     - score_thresh : confidence score to determine whether a keypoint prediction is reliable (a float between 0 and 1).
-    - crop : boolean which indicates if square cropping is done or not
+    - crop : boolean which indicates if systematic square cropping to the smaller side of 
+                    the image is done or not,
+    - smart_crop : boolen which indicates if cropping from previous frame detection is done or not,
     - internal_fps : when using the internal color camera as input source, set its FPS to this value (calling setFps()).
     - internal_frame_height : when using the internal color camera, set the frame height (calling setIspScale()).
                                 The width is calculated accordingly to height and depends on value of 'crop'
@@ -124,6 +126,7 @@ class MovenetDepthai:
                 model=None, 
                 score_thresh=0.2,
                 crop=False,
+                smart_crop = True,
                 internal_fps=None,
                 internal_frame_height=640,
                 stats=True):
@@ -150,6 +153,7 @@ class MovenetDepthai:
         self.score_thresh = score_thresh   
         
         self.crop = crop
+        self.smart_crop = smart_crop
         self.internal_fps = internal_fps
         self.stats = stats
         
@@ -165,7 +169,7 @@ class MovenetDepthai:
                 self.internal_fps = internal_fps
             print(f"Internal camera FPS set to: {self.internal_fps}")
 
-            self.video_fps = internal_fps # Used when saving the output in a video file. Should be close to the real fps
+            self.video_fps = self.internal_fps # Used when saving the output in a video file. Should be close to the real fps
             
             if self.crop:
                 self.frame_size, self.scale_nd = find_isp_scale_params(internal_frame_height)
@@ -376,12 +380,12 @@ class MovenetDepthai:
             return self.init_crop_region
 
     def pd_postprocess(self, inference):
-        
         kps = np.array(inference.getLayerFp16('Identity')).reshape(-1,3) # 17x3
         body = Body(scores=kps[:,2], keypoints_norm=kps[:,[1,0]], score_thresh=self.score_thresh)
         body.keypoints = (np.array([self.crop_region.xmin, self.crop_region.ymin]) + body.keypoints_norm * self.crop_region.size).astype(np.int)
         body.crop_region = self.crop_region
-        body.next_crop_region = self.determine_crop_region(body)
+        if self.smart_crop:
+            body.next_crop_region = self.determine_crop_region(body)
         return body
 
     def next_frame(self):
@@ -433,7 +437,8 @@ class MovenetDepthai:
         # Get result from device
         inference = self.q_pd_out.get()
         body = self.pd_postprocess(inference)
-        self.crop_region = body.next_crop_region
+        if self.smart_crop:
+            self.crop_region = body.next_crop_region
 
         # Statistics
         if self.stats:

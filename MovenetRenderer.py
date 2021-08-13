@@ -26,7 +26,6 @@ class MovenetRenderer:
             fourcc = cv2.VideoWriter_fourcc(*"MJPG")
             self.output = cv2.VideoWriter(output,fourcc,pose.video_fps,(pose.img_w, pose.img_h))
 
-
     def draw(self, frame, body):
         self.frame = frame
         lines = [np.array([body.keypoints[point] for point in line]) for line in LINES_BODY if body.scores[line[0]] > self.pose.score_thresh and body.scores[line[1]] > self.pose.score_thresh]
@@ -51,7 +50,7 @@ class MovenetRenderer:
         if self.output:
             self.output.release()
 
-    def waitKey(self, delay):
+    def waitKey(self, delay=1):
         if self.show_fps:
                 self.pose.fps.draw(self.frame, orig=(50,50), size=1, color=(240,180,100))
         cv2.imshow("Movenet", self.frame)

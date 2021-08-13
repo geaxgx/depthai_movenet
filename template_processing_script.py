@@ -22,7 +22,6 @@ def determine_torso_and_body_range(x, y, scores, center_x, center_y):
     full 17 keypoints and 4 torso keypoints. The returned information will be
     used to determine the crop size. See determine_crop_region for more detail.
     """
-    global torso_visible # Bug depthai
     torso_joints = [5, 6, 11, 12]
     max_torso_yrange = 0.0
     max_torso_xrange = 0.0
@@ -58,13 +57,11 @@ def determine_crop_region(scores, x, y):
     When the model is not confident with the four torso joint predictions, the
     function returns a default crop which is the full image padded to square.
     """
-    global determine_torso_and_body_range # Bug depthai
     if torso_visible(scores):
         center_x = (x[11] + x[12]) // 2
         center_y = (y[11] + y[12]) // 2
         max_torso_yrange, max_torso_xrange, max_body_yrange, max_body_xrange = determine_torso_and_body_range(x, y, scores, center_x, center_y)
         crop_length_half = max(max_torso_xrange * 1.9, max_torso_yrange * 1.9, max_body_yrange * 1.2, max_body_xrange * 1.2)
-        # tmp = [center_x, self.img_w - center_x, center_y, self.img_h - center_y]
         crop_length_half = int(round(min(crop_length_half, max(center_x, ${_img_w} - center_x, center_y, ${_img_h} - center_y))))
         crop_corner = [center_x - crop_length_half, center_y - crop_length_half]
 
@@ -77,7 +74,6 @@ def determine_crop_region(scores, x, y):
         return ${_init_crop_region}
 
 def pd_postprocess(inference, crop_region):
-    global determine_crop_region # Bug depthai
     size = crop_region['size']
     xmin = crop_region['xmin']
     ymin = crop_region['ymin']
@@ -94,7 +90,8 @@ def pd_postprocess(inference, crop_region):
         scores.append(inference[3*i+2])
         x.append(int(xmin + xn * size)) 
         y.append(int(ymin + yn * size)) 
-    next_crop_region = determine_crop_region(scores, x, y)
+          
+    next_crop_region = determine_crop_region(scores, x, y) if ${_smart_crop} else init_crop_region
     return x, y, xnorm, ynorm, scores, next_crop_region
 
 node.warn("Processing node started")

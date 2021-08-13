@@ -114,7 +114,9 @@ class MovenetDepthai:
                     - a path of a blob file. It is important that the filename contains 
                     the string "thunder" or "lightning" to identify the tyoe of the model.
     - score_thresh : confidence score to determine whether a keypoint prediction is reliable (a float between 0 and 1).
-    - crop : boolean which indicates if square cropping is done or not
+    - crop : boolean which indicates if systematic square cropping to the smaller side of 
+                    the image is done or not,
+    - smart_crop : boolen which indicates if cropping from previous frame detection is done or not,
     - internal_fps : when using the internal color camera as input source, set its FPS to this value (calling setFps()).
     - internal_frame_height : when using the internal color camera, set the frame height (calling setIspScale()).
                                 The width is calculated accordingly to height and depends on value of 'crop'
@@ -124,6 +126,7 @@ class MovenetDepthai:
                 model=None, 
                 score_thresh=0.2,
                 crop=False,
+                smart_crop = True,
                 internal_fps=None,
                 internal_frame_height=640,
                 stats=True):
@@ -150,6 +153,7 @@ class MovenetDepthai:
         self.score_thresh = score_thresh   
         
         self.crop = crop
+        self.smart_crop = smart_crop
         self.internal_fps = internal_fps
         self.stats = stats
         
@@ -165,7 +169,7 @@ class MovenetDepthai:
                 self.internal_fps = internal_fps
             print(f"Internal camera FPS set to: {self.internal_fps}")
 
-            self.video_fps = internal_fps # Used when saving the output in a video file. Should be close to the real fps
+            self.video_fps = self.internal_fps # Used when saving the output in a video file. Should be close to the real fps
             
             if self.crop:
                 self.frame_size, self.scale_nd = find_isp_scale_params(internal_frame_height)
@@ -259,7 +263,7 @@ class MovenetDepthai:
 
         # Define processing script
         processing_script = pipeline.create(dai.node.Script)
-        processing_script.setScriptData(self.build_processing_script())
+        processing_script.setScript(self.build_processing_script())
         
 
         pd_nn.out.link(processing_script.inputs['from_pd_nn'])
@@ -293,11 +297,17 @@ class MovenetDepthai:
                     _pd_input_length = self.pd_input_length,
                     _score_thresh = self.score_thresh,
                     _img_w = self.img_w,
-                    _img_h = self.img_h
+                    _img_h = self.img_h,
+                    _smart_crop = self.smart_crop
         )
+        # Remove comments and empty lines
+        import re
+        code = re.sub(r'"{3}.*?"{3}', '', code, flags=re.DOTALL)
+        code = re.sub(r'#.*', '', code)
+        code = re.sub('\n\s*\n', '\n', code)
         # For debuging
-        # with open("tmp_code.py", "w") as file:
-        #     file.write(code)
+        with open("tmp_code.py", "w") as file:
+            file.write(code)
 
         return code
 

@@ -22,8 +22,6 @@ Note: in either mode, when using the color camera, you can choose to disable the
 
 ## Install
 
-**Currently, the scripting node capabilty is an alpha release. It is important to use the version specified in the requirements.txt**
-
 Install the python packages DepthAI, Opencv with the following command:
 ```
 python3 -m pip install -r requirements.txt
