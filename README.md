@@ -33,8 +33,8 @@ python3 -m pip install -r requirements.txt
 
 ```
 > python3 demo.py -h                                               
-usage: demo.py [-h] [-e] [-m MODEL] [-i INPUT] [-c] [-s SCORE_THRESHOLD]
-               [--internal_fps INTERNAL_FPS]
+usage: demo.py [-h] [-e] [-m MODEL] [-i INPUT] [-c] [-nsc]
+               [-s SCORE_THRESHOLD] [-f INTERNAL_FPS]
                [--internal_frame_height INTERNAL_FRAME_HEIGHT] [-o OUTPUT]
 
 optional arguments:
@@ -46,11 +46,14 @@ optional arguments:
   -i INPUT, --input INPUT
                         'rgb' or 'rgb_laconic' or path to video/image file to
                         use as input (default=rgb)
-  -c, --crop            Center crop frames to a square shape
+  -c, --crop            Center cropping frames to a square shape (smaller size
+                        of original frame)
+  -nsc, --no_smart_crop
+                        Disable smart cropping from previous frame detection
   -s SCORE_THRESHOLD, --score_threshold SCORE_THRESHOLD
                         Confidence score to determine whether a keypoint
                         prediction is reliable (default=0.200000)
-  --internal_fps INTERNAL_FPS
+  -f INTERNAL_FPS, --internal_fps INTERNAL_FPS
                         Fps of internal color camera. Too high value lower NN
                         fps (default: depends on the model
   --internal_frame_height INTERNAL_FRAME_HEIGHT
@@ -79,7 +82,7 @@ optional arguments:
 
 - To change the FPS of the internal camera to 15 frames/s: 
 
-    ```python3 BlazeposeOpenvino.py --internal_fps 15```
+    ```python3 demo.py -f 15```
 
     Note: by default, the internal camera FPS is set to 26 for Lightning, and to 12 for Thunder. These values are based on my own observations. **Please, don't hesitate to play with this parameter to find the optimal value.** If you observe that your FPS is well below the default value, you should lower the FPS with this option until the set FPS is just above the observed FPS.
 
@@ -155,6 +158,7 @@ pose.exit()
 |-|-|
 |[Semaphore alphabet](examples/semaphore_alphabet)  |<img src="examples/semaphore_alphabet/medias/semaphore.gif" alt="Sempahore alphabet" width="200"/>|
 |[Yoga Pose Classification](examples/yoga_pose_recognition)|<img src="examples/yoga_pose_recognition/medias/yoga_pose.gif" alt="Yoga Pose Classification" width="200"/>|
+|[Hand focusing](examples/hand_focusing)|<img src="examples/hand_focusing/medias/left_right.jpg" alt="Yoga Pose Classification" width="200"/>
 
 
 ## Credits
