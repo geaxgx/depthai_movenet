@@ -205,7 +205,7 @@ while True:
                 color = (0,0,255)
             else: # left
                 color = (0,255,0)
-            cv2.rectangle(frame, zone[:2], zone[2:], color, 3)
+            cv2.rectangle(frame, tuple(zone[:2]), tuple(zone[2:]), color, 3)
     # Draw 2d skeleton
     frame = renderer.draw(frame, body)
     
